@@ -39,14 +39,15 @@ function PatientDashboard() {
       loading:"Load ho raha hai...", noDoctor:"Koi doctor nahi mila.",
       bookAppt:"📅 Appointment Book Karo", dateLabel:"Date", timeLabel:"Time",
       confirm:"Confirm ✓", cancel:"Cancel", booking:"Booking...",
-      logout:"Logout", settings:"Settings", profileMenu:"Profile", home:"Home",
+      logout:"Logout", settings:"Settings", profileMenu:"Profile",
+      home:"Home", appointments:"Appointments",
       darkMode:"Dark Mode", language:"Language",
       profileTitle:"Meri Profile", name:"Naam", email:"Email",
       role:"Patient", doctor:"Doctor", status:"Status",
-      viewProfile:"Profile Dekho", bookNow:"Book Karo",
+      viewProfile:"Profile Dekho",
       spec:"Specialization", qual:"Qualification", exp:"Experience",
-      addr:"Address", fees:"Fees", timing:"Timing", available:"Available",
-      yes:"✅ Haan", no:"❌ Nahi",
+      addr:"Address", fees:"Fees", timing:"Timing",
+      yes:"✅ Available", no:"❌ Unavailable",
     },
     english: {
       dashboard:"Patient Dashboard", mereAppt:"My Appointments",
@@ -57,14 +58,15 @@ function PatientDashboard() {
       loading:"Loading...", noDoctor:"No doctors found.",
       bookAppt:"📅 Book Appointment", dateLabel:"Date", timeLabel:"Time",
       confirm:"Confirm ✓", cancel:"Cancel", booking:"Booking...",
-      logout:"Logout", settings:"Settings", profileMenu:"Profile", home:"Home",
+      logout:"Logout", settings:"Settings", profileMenu:"Profile",
+      home:"Home", appointments:"Appointments",
       darkMode:"Dark Mode", language:"Language",
       profileTitle:"My Profile", name:"Name", email:"Email",
       role:"Patient", doctor:"Doctor", status:"Status",
-      viewProfile:"View Profile", bookNow:"Book Now",
+      viewProfile:"View Profile",
       spec:"Specialization", qual:"Qualification", exp:"Experience",
-      addr:"Address", fees:"Fees", timing:"Timing", available:"Available",
-      yes:"✅ Yes", no:"❌ No",
+      addr:"Address", fees:"Fees", timing:"Timing",
+      yes:"✅ Available", no:"❌ Unavailable",
     }
   };
   const tx = t[language];
@@ -135,9 +137,10 @@ function PatientDashboard() {
   };
 
   const navItems = [
-    { id:"home", icon:"🏠", label:tx.home },
-    { id:"profile", icon:"👤", label:tx.profileMenu },
-    { id:"settings", icon:"⚙️", label:tx.settings },
+    { id:"home",         icon:"🏠", label:tx.home },
+    { id:"appointments", icon:"📅", label:tx.appointments },
+    { id:"profile",      icon:"👤", label:tx.profileMenu },
+    { id:"settings",     icon:"⚙️", label:tx.settings },
   ];
 
   const Sidebar = () => (
@@ -147,9 +150,14 @@ function PatientDashboard() {
         <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
           {navItems.map(item => (
             <button key={item.id} onClick={() => setActivePage(item.id)}
-              style={{ padding:"12px 16px", borderRadius:"12px", border:"none", background:activePage===item.id?"rgba(0,168,255,0.15)":"transparent", color:activePage===item.id?"#00a8ff":textSecondary, fontWeight:"600", fontSize:"15px", cursor:"pointer", display:"flex", alignItems:"center", gap:"12px", textAlign:"left" }}>
+              style={{ padding:"12px 16px", borderRadius:"12px", border:"none", background:activePage===item.id?"rgba(0,168,255,0.15)":"transparent", color:activePage===item.id?"#00a8ff":textSecondary, fontWeight:"600", fontSize:"15px", cursor:"pointer", display:"flex", alignItems:"center", gap:"12px", textAlign:"left", position:"relative" }}>
               <span style={{ fontSize:"20px" }}>{item.icon}</span>
               <span>{item.label}</span>
+              {item.id==="appointments" && myAppts.filter(a=>a.status==="confirmed").length > 0 && (
+                <span style={{ position:"absolute", right:"12px", background:"#48bb78", color:"#fff", borderRadius:"50%", width:"18px", height:"18px", fontSize:"11px", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:"700" }}>
+                  {myAppts.filter(a=>a.status==="confirmed").length}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -176,15 +184,20 @@ function PatientDashboard() {
       <div style={{ position:"fixed", bottom:0, left:0, right:0, height:"64px", background:navBg, borderTop:border, display:"flex", alignItems:"center", justifyContent:"space-around", zIndex:100 }}>
         {navItems.map(item => (
           <button key={item.id} onClick={() => setActivePage(item.id)}
-            style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"4px", padding:"8px 16px", border:"none", background:"transparent", color:activePage===item.id?"#00a8ff":textSecondary, cursor:"pointer" }}>
-            <span style={{ fontSize:"22px" }}>{item.icon}</span>
-            <span style={{ fontSize:"11px", fontWeight:"600" }}>{item.label}</span>
+            style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"4px", padding:"6px 12px", border:"none", background:"transparent", color:activePage===item.id?"#00a8ff":textSecondary, cursor:"pointer", position:"relative" }}>
+            <span style={{ fontSize:"20px" }}>{item.icon}</span>
+            <span style={{ fontSize:"10px", fontWeight:"600" }}>{item.label}</span>
+            {item.id==="appointments" && myAppts.filter(a=>a.status==="confirmed").length > 0 && (
+              <span style={{ position:"absolute", top:"2px", right:"6px", background:"#48bb78", color:"#fff", borderRadius:"50%", width:"16px", height:"16px", fontSize:"10px", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:"700" }}>
+                {myAppts.filter(a=>a.status==="confirmed").length}
+              </span>
+            )}
           </button>
         ))}
         <button onClick={handleLogout}
-          style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"4px", padding:"8px 16px", border:"none", background:"transparent", color:"#fc8181", cursor:"pointer" }}>
-          <span style={{ fontSize:"22px" }}>🚪</span>
-          <span style={{ fontSize:"11px", fontWeight:"600" }}>{tx.logout}</span>
+          style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"4px", padding:"6px 12px", border:"none", background:"transparent", color:"#fc8181", cursor:"pointer" }}>
+          <span style={{ fontSize:"20px" }}>🚪</span>
+          <span style={{ fontSize:"10px", fontWeight:"600" }}>{tx.logout}</span>
         </button>
       </div>
     </>
@@ -218,6 +231,7 @@ function PatientDashboard() {
               {[
                 [tx.mereAppt, myAppts.length, "#00a8ff"],
                 [tx.availDoctors, doctors.filter(d=>d.available).length, "#48bb78"],
+                ["Confirmed", myAppts.filter(a=>a.status==="confirmed").length, "#48bb78"],
                 [tx.assignedDoc, assigned?`Dr. ${assigned.name}`:"—", "#9f7aea"],
               ].map(([label, val, color]) => (
                 <div key={label} style={{ background:cardBg, borderRadius:"12px", padding:"16px", border, borderTop:`3px solid ${color}` }}>
@@ -231,18 +245,16 @@ function PatientDashboard() {
             {assigned && (
               <div style={{ background:cardBg, borderRadius:"14px", padding:"20px", border, marginBottom:"16px" }}>
                 <div style={{ fontSize:"16px", fontWeight:"700", color:textPrimary, marginBottom:"14px", paddingBottom:"12px", borderBottom:border }}>⭐ {tx.assignedTitle}</div>
-                <div style={{ background:"rgba(0,168,255,0.08)", border:"1.5px solid rgba(0,168,255,0.3)", borderRadius:"12px", padding:"16px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"12px" }}>
-                  <div>
-                    <div style={{ fontWeight:"700", fontSize:"16px", color:textPrimary }}>Dr. {assigned.name}</div>
-                    <div style={{ fontSize:"13px", color:textSecondary, marginTop:"4px" }}>Fees: ₹{assigned.fees ?? "N/A"} • {assigned.timing ?? "N/A"}</div>
-                  </div>
-                  <div style={{ display:"flex", gap:"8px", flexWrap:"wrap" }}>
+                <div style={{ background:"rgba(0,168,255,0.08)", border:"1.5px solid rgba(0,168,255,0.3)", borderRadius:"12px", padding:"16px" }}>
+                  <div style={{ fontWeight:"700", fontSize:"16px", color:textPrimary }}>Dr. {assigned.name}</div>
+                  <div style={{ fontSize:"13px", color:textSecondary, marginTop:"4px", marginBottom:"12px" }}>Fees: ₹{assigned.fees ?? "N/A"} • {assigned.timing ?? "N/A"}</div>
+                  <div style={{ display:"flex", gap:"8px" }}>
                     <button onClick={() => viewDoctorProfile(assigned._id)}
-                      style={{ padding:"8px 14px", borderRadius:"9px", border:`1px solid rgba(255,255,255,0.2)`, background:"transparent", color:textSecondary, fontWeight:"600", fontSize:"13px", cursor:"pointer" }}>
+                      style={{ flex:1, padding:"8px 0", borderRadius:"9px", border:`1px solid rgba(255,255,255,0.2)`, background:"transparent", color:textSecondary, fontWeight:"600", fontSize:"13px", cursor:"pointer" }}>
                       👁 {tx.viewProfile}
                     </button>
                     <button onClick={() => openModal(assigned)}
-                      style={{ padding:"8px 16px", borderRadius:"9px", border:"none", background:"linear-gradient(135deg,#00a8ff,#0057ff)", color:"#fff", fontWeight:"600", fontSize:"13px", cursor:"pointer" }}>
+                      style={{ flex:1, padding:"8px 0", borderRadius:"9px", border:"none", background:"linear-gradient(135deg,#00a8ff,#0057ff)", color:"#fff", fontWeight:"600", fontSize:"13px", cursor:"pointer" }}>
                       📅 {tx.bookKaro}
                     </button>
                   </div>
@@ -251,28 +263,23 @@ function PatientDashboard() {
             )}
 
             {/* All Doctors */}
-            <div style={{ background:cardBg, borderRadius:"14px", padding:"20px", border, marginBottom:"16px" }}>
+            <div style={{ background:cardBg, borderRadius:"14px", padding:"20px", border }}>
               <div style={{ fontSize:"16px", fontWeight:"700", color:textPrimary, marginBottom:"16px", paddingBottom:"12px", borderBottom:border }}>{tx.allDoctors}</div>
               {loading ? <div style={{ textAlign:"center", color:textSecondary, padding:"24px 0" }}>{tx.loading}</div>
               : doctors.length===0 ? <div style={{ textAlign:"center", color:textSecondary, padding:"24px 0" }}>{tx.noDoctor}</div>
               : doctors.map(doc => (
                 <div key={doc._id} style={{ border, borderRadius:"12px", padding:"14px 16px", marginBottom:"10px", background:darkMode?"rgba(255,255,255,0.03)":"#f8fafc" }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:"10px" }}>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontWeight:"700", fontSize:"14px", color:textPrimary }}>
-                        <span style={{ display:"inline-block", width:"8px", height:"8px", borderRadius:"50%", background:doc.available?"#48bb78":"#fc8181", marginRight:"8px" }} />
-                        Dr. {doc.name}
-                      </div>
-                      <div style={{ fontSize:"12px", color:textSecondary, marginTop:"4px" }}>
-                        {doc.specialization && `${doc.specialization} • `}
-                        {doc.qualification && `${doc.qualification} • `}
-                        Fees: ₹{doc.fees ?? "N/A"}
-                      </div>
-                      {doc.address && <div style={{ fontSize:"11px", color:textSecondary, marginTop:"2px" }}>📍 {doc.address}</div>}
-                    </div>
+                  <div style={{ fontWeight:"700", fontSize:"14px", color:textPrimary, marginBottom:"4px" }}>
+                    <span style={{ display:"inline-block", width:"8px", height:"8px", borderRadius:"50%", background:doc.available?"#48bb78":"#fc8181", marginRight:"8px" }} />
+                    Dr. {doc.name}
                   </div>
-                  {/* Buttons */}
-                  <div style={{ display:"flex", gap:"8px", marginTop:"12px" }}>
+                  <div style={{ fontSize:"12px", color:textSecondary, marginBottom:"4px" }}>
+                    {doc.specialization && `${doc.specialization} • `}
+                    {doc.qualification && `${doc.qualification} • `}
+                    Fees: ₹{doc.fees ?? "N/A"}
+                  </div>
+                  {doc.address && <div style={{ fontSize:"11px", color:textSecondary, marginBottom:"10px" }}>📍 {doc.address}</div>}
+                  <div style={{ display:"flex", gap:"8px", marginTop:"8px" }}>
                     <button onClick={() => viewDoctorProfile(doc._id)} disabled={docLoading}
                       style={{ flex:1, padding:"8px 0", borderRadius:"9px", border:`1px solid ${darkMode?"rgba(255,255,255,0.15)":"#e2e8f0"}`, background:"transparent", color:textSecondary, fontWeight:"600", fontSize:"13px", cursor:"pointer" }}>
                       👁 {tx.viewProfile}
@@ -285,38 +292,67 @@ function PatientDashboard() {
                 </div>
               ))}
             </div>
-
-            {/* My Appointments */}
-            <div style={{ background:cardBg, borderRadius:"14px", padding:"20px", border, overflowX:"auto" }}>
-              <div style={{ fontSize:"16px", fontWeight:"700", color:textPrimary, marginBottom:"16px", paddingBottom:"12px", borderBottom:border }}>{tx.myApptTitle}</div>
-              {myAppts.length===0 ? <div style={{ textAlign:"center", color:textSecondary, padding:"24px 0" }}>{tx.noAppt}</div>
-              : (
-                <table style={{ width:"100%", borderCollapse:"collapse", minWidth:"380px" }}>
-                  <thead>
-                    <tr>{[tx.doctor, tx.dateLabel, tx.timeLabel, tx.status].map(h=>(
-                      <th key={h} style={{ textAlign:"left", padding:"10px 10px", fontSize:"11px", fontWeight:"700", color:textSecondary, textTransform:"uppercase", borderBottom:border }}>{h}</th>
-                    ))}</tr>
-                  </thead>
-                  <tbody>
-                    {myAppts.map(a => (
-                      <tr key={a._id}>
-                        <td style={{ padding:"12px 10px", fontSize:"13px", color:textPrimary, borderBottom:tableBorder }}>Dr. {a.doctorName||"—"}</td>
-                        <td style={{ padding:"12px 10px", fontSize:"13px", color:textPrimary, borderBottom:tableBorder }}>{a.date}</td>
-                        <td style={{ padding:"12px 10px", fontSize:"13px", color:textPrimary, borderBottom:tableBorder }}>{a.time}</td>
-                        <td style={{ padding:"12px 10px", borderBottom:tableBorder }}>
-                          <span style={{ padding:"3px 10px", borderRadius:"20px", fontSize:"11px", fontWeight:"600",
-                            background:a.status==="confirmed"?"rgba(72,187,120,0.15)":a.status==="cancelled"?"rgba(252,129,129,0.15)":"rgba(237,137,54,0.15)",
-                            color:a.status==="confirmed"?"#68d391":a.status==="cancelled"?"#fc8181":"#f6ad55" }}>
-                            {a.status||"pending"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
           </>
+        )}
+
+        {/* APPOINTMENTS PAGE */}
+        {activePage === "appointments" && (
+          <div>
+            <div style={{ fontSize:"20px", fontWeight:"700", color:textPrimary, marginBottom:"20px" }}>{tx.myApptTitle}</div>
+
+            {/* Stats row */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"12px", marginBottom:"20px" }}>
+              {[
+                ["Total", myAppts.length, "#00a8ff"],
+                ["Confirmed", myAppts.filter(a=>a.status==="confirmed").length, "#48bb78"],
+                ["Pending", myAppts.filter(a=>a.status==="pending"||a.status==="Booked").length, "#ed8936"],
+              ].map(([label, val, color]) => (
+                <div key={label} style={{ background:cardBg, borderRadius:"12px", padding:"14px", border, borderTop:`3px solid ${color}`, textAlign:"center" }}>
+                  <div style={{ fontSize:"11px", color:textSecondary, fontWeight:"600", marginBottom:"4px" }}>{label}</div>
+                  <div style={{ fontSize:"22px", fontWeight:"800", color:textPrimary }}>{val}</div>
+                </div>
+              ))}
+            </div>
+
+            {myAppts.length === 0 ? (
+              <div style={{ background:cardBg, borderRadius:"14px", padding:"40px 20px", border, textAlign:"center" }}>
+                <div style={{ fontSize:"40px", marginBottom:"12px" }}>📅</div>
+                <div style={{ fontSize:"16px", color:textSecondary }}>{tx.noAppt}</div>
+                <button onClick={() => setActivePage("home")}
+                  style={{ marginTop:"16px", padding:"10px 24px", borderRadius:"10px", border:"none", background:"linear-gradient(135deg,#00a8ff,#0057ff)", color:"#fff", fontWeight:"600", fontSize:"14px", cursor:"pointer" }}>
+                  Doctor Book Karo
+                </button>
+              </div>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+                {myAppts.map(a => (
+                  <div key={a._id} style={{ background:cardBg, borderRadius:"14px", padding:"18px 20px", border }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
+                      <div>
+                        <div style={{ fontWeight:"700", fontSize:"16px", color:textPrimary }}>Dr. {a.doctorName || "—"}</div>
+                        {a.specialization && <div style={{ fontSize:"12px", color:textSecondary, marginTop:"2px" }}>{a.specialization}</div>}
+                      </div>
+                      <span style={{ padding:"4px 12px", borderRadius:"20px", fontSize:"12px", fontWeight:"600", flexShrink:0,
+                        background:a.status==="confirmed"?"rgba(72,187,120,0.15)":a.status==="cancelled"?"rgba(252,129,129,0.15)":"rgba(237,137,54,0.15)",
+                        color:a.status==="confirmed"?"#68d391":a.status==="cancelled"?"#fc8181":"#f6ad55" }}>
+                        {a.status || "pending"}
+                      </span>
+                    </div>
+                    <div style={{ display:"flex", gap:"16px", flexWrap:"wrap" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
+                        <span style={{ fontSize:"14px" }}>📆</span>
+                        <span style={{ fontSize:"13px", color:textSecondary }}>{a.date}</span>
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
+                        <span style={{ fontSize:"14px" }}>⏰</span>
+                        <span style={{ fontSize:"13px", color:textSecondary }}>{a.time}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* PROFILE */}
@@ -333,7 +369,8 @@ function PatientDashboard() {
                 [tx.name, profile?.name],
                 [tx.email, profile?.email],
                 [tx.role, tx.role],
-                [tx.mereAppt, myAppts.length],
+                ["Total Appointments", myAppts.length],
+                ["Confirmed", myAppts.filter(a=>a.status==="confirmed").length],
               ].map(([label, val]) => (
                 <div key={label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 0", borderBottom:border }}>
                   <span style={{ fontSize:"13px", color:textSecondary, fontWeight:"600" }}>{label}</span>
@@ -349,7 +386,6 @@ function PatientDashboard() {
           <div style={{ maxWidth:"500px", margin:"0 auto" }}>
             <div style={{ fontSize:"20px", fontWeight:"700", color:textPrimary, marginBottom:"20px" }}>{tx.settings}</div>
             <div style={{ background:cardBg, borderRadius:"20px", padding:"24px", border }}>
-
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 0", borderBottom:border }}>
                 <div>
                   <div style={{ fontSize:"15px", fontWeight:"600", color:textPrimary }}>🌙 {tx.darkMode}</div>
@@ -419,15 +455,12 @@ function PatientDashboard() {
       {doctorModal.open && (
         <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:999, padding:"16px" }}>
           <div style={{ background:modalBg, borderRadius:"20px", padding:"28px", width:"100%", maxWidth:"420px", border, maxHeight:"90vh", overflowY:"auto" }}>
-
-            {/* Header */}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
               <div style={{ fontSize:"17px", fontWeight:"700", color:textPrimary }}>👨‍⚕️ Doctor Profile</div>
               <button onClick={() => setDoctorModal({ open:false, doctor:null })}
                 style={{ background:"transparent", border:"none", color:textSecondary, fontSize:"22px", cursor:"pointer", lineHeight:1 }}>✕</button>
             </div>
 
-            {/* Avatar */}
             <div style={{ textAlign:"center", marginBottom:"20px" }}>
               <div style={{ width:"72px", height:"72px", borderRadius:"50%", background:"linear-gradient(135deg,#00a8ff,#0057ff)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"28px", margin:"0 auto 10px" }}>👨‍⚕️</div>
               <div style={{ fontSize:"18px", fontWeight:"700", color:textPrimary }}>Dr. {doctorModal.doctor?.name}</div>
@@ -439,7 +472,6 @@ function PatientDashboard() {
               </span>
             </div>
 
-            {/* Info */}
             {[
               [tx.spec, doctorModal.doctor?.specialization || "—"],
               [tx.qual, doctorModal.doctor?.qualification || "—"],
@@ -454,7 +486,6 @@ function PatientDashboard() {
               </div>
             ))}
 
-            {/* Book Button */}
             {doctorModal.doctor?.available && (
               <button onClick={() => { setDoctorModal({ open:false, doctor:null }); openModal(doctorModal.doctor); }}
                 style={{ width:"100%", padding:"13px", borderRadius:"12px", border:"none", background:"linear-gradient(135deg,#00a8ff,#0057ff)", color:"#fff", fontWeight:"700", fontSize:"15px", cursor:"pointer", marginTop:"20px" }}>
