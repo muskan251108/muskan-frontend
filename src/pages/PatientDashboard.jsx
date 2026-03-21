@@ -18,13 +18,15 @@ function PatientDashboard() {
   const [activePage, setActivePage] = useState("home");
   const [darkMode, setDarkMode] = useState(true);
   const [language, setLanguage] = useState("hindi");
-  const [editingProfile, setEditingProfile] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(true);
+  const [doctorModal, setDoctorModal] = useState({ open: false, doctor: null });
+  const [docLoading, setDocLoading] = useState(false);
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   const t = {
@@ -41,8 +43,11 @@ function PatientDashboard() {
       darkMode: "Dark Mode", language: "Language",
       profileTitle: "Meri Profile", name: "Naam", email: "Email",
       role: "Patient", doctor: "Doctor", status: "Status",
-      editProfile: "Profile Edit Karo", saveProfile: "Save Karo",
-      cancelEdit: "Cancel", saving: "⏳ Saving...",
+      viewProfile: "Profile Dekho", bookNow: "Book Karo",
+      doctorProfile: "Doctor Profile", fees: "Fees",
+      timing: "Timing", experience: "Experience",
+      qualification: "Qualification", address: "Address",
+      available: "Available", notAvailable: "Not Available",
     },
     english: {
       dashboard: "Patient Dashboard", mereAppt: "My Appointments",
@@ -57,8 +62,11 @@ function PatientDashboard() {
       darkMode: "Dark Mode", language: "Language",
       profileTitle: "My Profile", name: "Name", email: "Email",
       role: "Patient", doctor: "Doctor", status: "Status",
-      editProfile: "Edit Profile", saveProfile: "Save",
-      cancelEdit: "Cancel", saving: "⏳ Saving...",
+      viewProfile: "View Profile", bookNow: "Book Now",
+      doctorProfile: "Doctor Profile", fees: "Fees",
+      timing: "Timing", experience: "Experience",
+      qualification: "Qualification", address: "Address",
+      available: "Available", notAvailable: "Not Available",
     }
   };
   const tx = t[language];
@@ -90,7 +98,20 @@ function PatientDashboard() {
     finally { setLoading(false); }
   };
 
-  const openModal = (doc) => { setModal({ open: true, doctor: doc }); setBookDate(""); setBookTime(""); setModalErr(""); };
+  const openModal = (doc) => {
+    setModal({ open: true, doctor: doc });
+    setBookDate(""); setBookTime(""); setModalErr("");
+  };
+
+  const viewDoctorProfile = async (doctorId) => {
+    setDocLoading(true);
+    try {
+      const res = await API.get(`/doctors/${doctorId}`);
+      setDoctorModal({ open: true, doctor: res.data });
+    } catch {
+      setMessage({ type: "error", text: "Doctor profile load nahi hui." });
+    } finally { setDocLoading(false); }
+  };
 
   const handleBook = async () => {
     if (!bookDate || !bookTime) { setModalErr("Date aur time dono bharo."); return; }
@@ -170,14 +191,8 @@ function PatientDashboard() {
     </>
   );
 
-  const mainStyle = {
-    marginLeft: isMobile ? "0" : "220px",
-    padding: isMobile ? "72px 16px 80px" : "28px 32px",
-    position: "relative", zIndex: 1,
-  };
-
   return (
-    <div style={{ minHeight: "100vh", background: bg, fontFamily: "'Segoe UI', sans-serif", transition: "background 0.3s", display: "flex" }}>
+    <div style={{ minHeight: "100vh", background: bg, fontFamily: "'Segoe UI', sans-serif", transition: "background 0.3s" }}>
 
       {darkMode && <>
         <div style={{ position: "fixed", top: "-80px", left: "-80px", width: "300px", height: "300px", borderRadius: "50%", background: "rgba(0,168,255,0.07)", pointerEvents: "none", zIndex: 0 }} />
@@ -186,7 +201,7 @@ function PatientDashboard() {
 
       {isMobile ? <BottomNav /> : <Sidebar />}
 
-      <div style={mainStyle}>
+      <div style={{ marginLeft: isMobile ? "0" : "220px", padding: isMobile ? "72px 16px 80px" : "28px 32px", position: "relative", zIndex: 1 }}>
 
         {/* HOME */}
         {activePage === "home" && (
@@ -200,7 +215,7 @@ function PatientDashboard() {
             )}
 
             {/* Stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: "12px", marginBottom: "20px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "12px", marginBottom: "20px" }}>
               {[
                 [tx.mereAppt, myAppts.length, "#00a8ff"],
                 [tx.availDoctors, doctors.filter(d => d.available).length, "#48bb78"],
@@ -220,14 +235,18 @@ function PatientDashboard() {
                 <div style={{ background: "rgba(0,168,255,0.08)", border: "1.5px solid rgba(0,168,255,0.3)", borderRadius: "12px", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
                   <div>
                     <div style={{ fontWeight: "700", fontSize: "16px", color: textPrimary }}>Dr. {assigned.name}</div>
-                    <div style={{ fontSize: "13px", color: textSecondary, marginTop: "4px" }}>
-                      Fees: ₹{assigned.fees ?? "N/A"} • {assigned.timing ?? "N/A"}
-                    </div>
+                    <div style={{ fontSize: "13px", color: textSecondary, marginTop: "4px" }}>Fees: ₹{assigned.fees ?? "N/A"} • {assigned.timing ?? "N/A"}</div>
                   </div>
-                  <button onClick={() => openModal(assigned)}
-                    style={{ padding: "10px 20px", borderRadius: "9px", border: "none", background: "linear-gradient(135deg,#00a8ff,#0057ff)", color: "#fff", fontWeight: "600", fontSize: "14px", cursor: "pointer" }}>
-                    📅 {tx.bookKaro}
-                  </button>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <button onClick={() => viewDoctorProfile(assigned._id)}
+                      style={{ padding: "9px 16px", borderRadius: "9px", border: `1px solid ${darkMode ? "rgba(255,255,255,0.15)" : "#e2e8f0"}`, background: "transparent", color: textSecondary, fontWeight: "600", fontSize: "13px", cursor: "pointer" }}>
+                      👁 {tx.viewProfile}
+                    </button>
+                    <button onClick={() => openModal(assigned)}
+                      style={{ padding: "9px 16px", borderRadius: "9px", border: "none", background: "linear-gradient(135deg,#00a8ff,#0057ff)", color: "#fff", fontWeight: "600", fontSize: "13px", cursor: "pointer" }}>
+                      📅 {tx.bookKaro}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -238,23 +257,33 @@ function PatientDashboard() {
               {loading ? <div style={{ textAlign: "center", color: textSecondary, padding: "24px 0" }}>{tx.loading}</div>
                 : doctors.length === 0 ? <div style={{ textAlign: "center", color: textSecondary, padding: "24px 0" }}>{tx.noDoctor}</div>
                   : doctors.map(doc => (
-                    <div key={doc._id} style={{ border, borderRadius: "12px", padding: "14px 16px", marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", background: darkMode ? "rgba(255,255,255,0.03)" : "#f8fafc" }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: "700", fontSize: "14px", color: textPrimary }}>
-                          <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: doc.available ? "#48bb78" : "#fc8181", marginRight: "8px" }} />
-                          Dr. {doc.name}
+                    <div key={doc._id} style={{ border, borderRadius: "12px", padding: "14px 16px", marginBottom: "10px", background: darkMode ? "rgba(255,255,255,0.03)" : "#f8fafc" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: "700", fontSize: "14px", color: textPrimary }}>
+                            <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: doc.available ? "#48bb78" : "#fc8181", marginRight: "8px" }} />
+                            Dr. {doc.name}
+                          </div>
+                          <div style={{ fontSize: "12px", color: textSecondary, marginTop: "4px" }}>
+                            {doc.specialization && `${doc.specialization} • `}
+                            {doc.qualification && `${doc.qualification} • `}
+                            Fees: ₹{doc.fees ?? "N/A"}
+                          </div>
+                          {doc.experience && <div style={{ fontSize: "11px", color: textSecondary, marginTop: "2px" }}>🏥 {doc.experience}</div>}
+                          {doc.address && <div style={{ fontSize: "11px", color: textSecondary, marginTop: "2px" }}>📍 {doc.address}</div>}
                         </div>
-                        <div style={{ fontSize: "12px", color: textSecondary, marginTop: "4px" }}>
-                          {doc.specialization && `${doc.specialization} • `}
-                          {doc.qualification && `${doc.qualification} • `}
-                          Fees: ₹{doc.fees ?? "N/A"}
-                        </div>
-                        {doc.address && <div style={{ fontSize: "11px", color: textSecondary, marginTop: "2px" }}>📍 {doc.address}</div>}
                       </div>
-                      <button disabled={!doc.available} onClick={() => doc.available && openModal(doc)}
-                        style={{ padding: "8px 18px", borderRadius: "9px", border: "none", background: doc.available ? "linear-gradient(135deg,#00a8ff,#0057ff)" : "rgba(255,255,255,0.08)", color: doc.available ? "#fff" : textSecondary, fontWeight: "600", fontSize: "13px", cursor: doc.available ? "pointer" : "not-allowed", flexShrink: 0 }}>
-                        {doc.available ? tx.bookKaro : tx.unavailable}
-                      </button>
+                      {/* Buttons */}
+                      <div style={{ display: "flex", gap: "8px", marginTop: "12px", flexWrap: "wrap" }}>
+                        <button onClick={() => viewDoctorProfile(doc._id)}
+                          style={{ padding: "8px 14px", borderRadius: "9px", border: `1px solid ${darkMode ? "rgba(255,255,255,0.15)" : "#e2e8f0"}`, background: "transparent", color: textSecondary, fontWeight: "600", fontSize: "12px", cursor: "pointer" }}>
+                          👁 {tx.viewProfile}
+                        </button>
+                        <button disabled={!doc.available} onClick={() => doc.available && openModal(doc)}
+                          style={{ padding: "8px 14px", borderRadius: "9px", border: "none", background: doc.available ? "linear-gradient(135deg,#00a8ff,#0057ff)" : "rgba(255,255,255,0.08)", color: doc.available ? "#fff" : textSecondary, fontWeight: "600", fontSize: "12px", cursor: doc.available ? "pointer" : "not-allowed" }}>
+                          📅 {doc.available ? tx.bookKaro : tx.unavailable}
+                        </button>
+                      </div>
                     </div>
                   ))}
             </div>
@@ -264,19 +293,19 @@ function PatientDashboard() {
               <div style={{ fontSize: "16px", fontWeight: "700", color: textPrimary, marginBottom: "16px", paddingBottom: "12px", borderBottom: border }}>{tx.myApptTitle}</div>
               {myAppts.length === 0 ? <div style={{ textAlign: "center", color: textSecondary, padding: "24px 0" }}>{tx.noAppt}</div>
                 : (
-                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "400px" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "380px" }}>
                     <thead>
                       <tr>{[tx.doctor, tx.dateLabel, tx.timeLabel, tx.status].map(h => (
-                        <th key={h} style={{ textAlign: "left", padding: "10px 12px", fontSize: "11px", fontWeight: "700", color: textSecondary, textTransform: "uppercase", borderBottom: border }}>{h}</th>
+                        <th key={h} style={{ textAlign: "left", padding: "10px 10px", fontSize: "11px", fontWeight: "700", color: textSecondary, textTransform: "uppercase", borderBottom: border }}>{h}</th>
                       ))}</tr>
                     </thead>
                     <tbody>
                       {myAppts.map(a => (
                         <tr key={a._id}>
-                          <td style={{ padding: "12px", fontSize: "13px", color: textPrimary, borderBottom: tableBorder }}>Dr. {a.doctorName || "—"}</td>
-                          <td style={{ padding: "12px", fontSize: "13px", color: textPrimary, borderBottom: tableBorder }}>{a.date}</td>
-                          <td style={{ padding: "12px", fontSize: "13px", color: textPrimary, borderBottom: tableBorder }}>{a.time}</td>
-                          <td style={{ padding: "12px", borderBottom: tableBorder }}>
+                          <td style={{ padding: "12px 10px", fontSize: "13px", color: textPrimary, borderBottom: tableBorder }}>Dr. {a.doctorName || "—"}</td>
+                          <td style={{ padding: "12px 10px", fontSize: "13px", color: textPrimary, borderBottom: tableBorder }}>{a.date}</td>
+                          <td style={{ padding: "12px 10px", fontSize: "13px", color: textPrimary, borderBottom: tableBorder }}>{a.time}</td>
+                          <td style={{ padding: "12px 10px", borderBottom: tableBorder }}>
                             <span style={{
                               padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "600",
                               background: a.status === "confirmed" ? "rgba(72,187,120,0.15)" : a.status === "cancelled" ? "rgba(252,129,129,0.15)" : "rgba(237,137,54,0.15)",
@@ -304,7 +333,6 @@ function PatientDashboard() {
                 <div style={{ fontSize: "18px", fontWeight: "700", color: textPrimary }}>{profile?.name}</div>
                 <div style={{ fontSize: "13px", color: "#48bb78", marginTop: "4px" }}>{tx.role}</div>
               </div>
-
               {[
                 [tx.name, profile?.name],
                 [tx.email, profile?.email],
@@ -365,7 +393,7 @@ function PatientDashboard() {
       {/* Booking Modal */}
       {modal.open && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, padding: "16px" }}>
-          <div style={{ background: darkMode ? "#162033" : "#ffffff", borderRadius: "20px", padding: "28px", width: "100%", maxWidth: "400px", boxShadow: "0 20px 60px rgba(0,0,0,0.5)", border }}>
+          <div style={{ background: darkMode ? "#162033" : "#ffffff", borderRadius: "20px", padding: "28px", width: "100%", maxWidth: "400px", border }}>
             <div style={{ fontSize: "17px", fontWeight: "700", color: textPrimary, marginBottom: "4px" }}>{tx.bookAppt}</div>
             <div style={{ fontSize: "13px", color: textSecondary, marginBottom: "20px" }}>Dr. {modal.doctor?.name} • ₹{modal.doctor?.fees}</div>
 
@@ -387,6 +415,63 @@ function PatientDashboard() {
                 {bookingId ? tx.booking : tx.confirm}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Doctor Profile Modal */}
+      {doctorModal.open && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, padding: "16px" }}>
+          <div style={{ background: darkMode ? "#162033" : "#ffffff", borderRadius: "20px", padding: "28px", width: "100%", maxWidth: "420px", border, maxHeight: "90vh", overflowY: "auto" }}>
+
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <div style={{ fontSize: "17px", fontWeight: "700", color: textPrimary }}>👨‍⚕️ {tx.doctorProfile}</div>
+              <button onClick={() => setDoctorModal({ open: false, doctor: null })}
+                style={{ background: "transparent", border: "none", color: textSecondary, fontSize: "22px", cursor: "pointer", lineHeight: 1 }}>✕</button>
+            </div>
+
+            {/* Avatar */}
+            <div style={{ textAlign: "center", marginBottom: "20px" }}>
+              <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "linear-gradient(135deg,#00a8ff,#0057ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", margin: "0 auto 10px" }}>👨‍⚕️</div>
+              <div style={{ fontSize: "18px", fontWeight: "700", color: textPrimary }}>Dr. {doctorModal.doctor?.name}</div>
+              <div style={{ fontSize: "13px", color: "#00a8ff", marginTop: "4px" }}>{doctorModal.doctor?.specialization || "Doctor"}</div>
+              <span style={{
+                display: "inline-block", marginTop: "8px", padding: "4px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: "600",
+                background: doctorModal.doctor?.available ? "rgba(72,187,120,0.15)" : "rgba(252,129,129,0.15)",
+                color: doctorModal.doctor?.available ? "#68d391" : "#fc8181"
+              }}>
+                {doctorModal.doctor?.available ? `✅ ${tx.available}` : `❌ ${tx.notAvailable}`}
+              </span>
+            </div>
+
+            {/* Details */}
+            {[
+              ["🎓", tx.qualification, doctorModal.doctor?.qualification],
+              ["🏥", tx.experience, doctorModal.doctor?.experience],
+              ["📍", tx.address, doctorModal.doctor?.address],
+              ["💰", tx.fees, `₹${doctorModal.doctor?.fees ?? "N/A"}`],
+              ["🕐", tx.timing, doctorModal.doctor?.timing],
+            ].map(([icon, label, val]) => val && (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 0", borderBottom: border }}>
+                <span style={{ fontSize: "18px", flexShrink: 0 }}>{icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "11px", color: textSecondary, fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px" }}>{label}</div>
+                  <div style={{ fontSize: "14px", color: textPrimary, fontWeight: "600", marginTop: "2px" }}>{val}</div>
+                </div>
+              </div>
+            ))}
+
+            {/* Book Button */}
+            <button
+              disabled={!doctorModal.doctor?.available}
+              onClick={() => {
+                setDoctorModal({ open: false, doctor: null });
+                openModal(doctorModal.doctor);
+              }}
+              style={{ width: "100%", padding: "13px", borderRadius: "12px", border: "none", background: doctorModal.doctor?.available ? "linear-gradient(135deg,#00a8ff,#0057ff)" : "rgba(255,255,255,0.08)", color: doctorModal.doctor?.available ? "#fff" : textSecondary, fontWeight: "700", fontSize: "15px", cursor: doctorModal.doctor?.available ? "pointer" : "not-allowed", marginTop: "20px" }}>
+              {doctorModal.doctor?.available ? `📅 ${tx.bookKaro}` : tx.unavailable}
+            </button>
           </div>
         </div>
       )}
