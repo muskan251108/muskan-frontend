@@ -31,23 +31,29 @@ function DoctorDashboard() {
     } finally { setLoading(false); }
   };
 
-  const inp = {
-    width:"100%", padding:"11px 14px", borderRadius:"10px",
-    border:"1.5px solid rgba(255,255,255,0.1)", fontSize:"15px",
-    outline:"none", boxSizing:"border-box",
-    background:"rgba(255,255,255,0.06)", color:"#ffffff",
+  const handleStatus = async (id, status) => {
+    try {
+      await API.put(`/appointments/${id}/status`, { status });
+      setAppointments(appointments.map(a =>
+        a._id === id ? { ...a, status } : a
+      ));
+      setMessage({ type:"success", text:`Appointment ${status} ho gayi!` });
+    } catch {
+      setMessage({ type:"error", text:"Status update fail ho gaya." });
+    }
   };
+
+  const inp = { width:"100%", padding:"11px 14px", borderRadius:"10px", border:"1.5px solid rgba(255,255,255,0.1)", fontSize:"15px", outline:"none", boxSizing:"border-box", background:"rgba(255,255,255,0.06)", color:"#ffffff" };
   const lbl = { display:"block", fontSize:"12px", fontWeight:"600", color:"#a0aec0", marginBottom:"6px", letterSpacing:"0.5px" };
 
   return (
     <div style={{ minHeight:"100vh", background:"#0f1f3d", fontFamily:"'Segoe UI', sans-serif", position:"relative", overflow:"hidden" }}>
 
-      {/* BG circles */}
       <div style={{ position:"fixed", top:"-80px", left:"-80px", width:"300px", height:"300px", borderRadius:"50%", background:"rgba(0,168,255,0.07)", pointerEvents:"none" }} />
       <div style={{ position:"fixed", bottom:"-100px", right:"-60px", width:"350px", height:"350px", borderRadius:"50%", background:"rgba(0,168,255,0.05)", pointerEvents:"none" }} />
 
       {/* Navbar */}
-      <nav style={{ background:"rgba(255,255,255,0.04)", borderBottom:"1px solid rgba(255,255,255,0.08)", backdropFilter:"blur(10px)", padding:"0 32px", height:"64px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100 }}>
+      <nav style={{ background:"rgba(255,255,255,0.04)", borderBottom:"1px solid rgba(255,255,255,0.08)", padding:"0 32px", height:"64px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100 }}>
         <div style={{ fontSize:"20px", fontWeight:"800", color:"#00a8ff", letterSpacing:"1px" }}>🌸 MUSKAN</div>
         <div style={{ display:"flex", alignItems:"center", gap:"16px" }}>
           <span style={{ fontSize:"14px", fontWeight:"600", color:"#a0aec0" }}>👨‍⚕️ Dr. {profile?.name || "..."}</span>
@@ -58,7 +64,7 @@ function DoctorDashboard() {
         </div>
       </nav>
 
-      <div style={{ padding:"28px 32px", maxWidth:"1000px", margin:"0 auto", position:"relative", zIndex:1 }}>
+      <div style={{ padding:"28px 32px", maxWidth:"1100px", margin:"0 auto", position:"relative", zIndex:1 }}>
         <div style={{ fontSize:"22px", fontWeight:"700", color:"#ffffff", marginBottom:"24px" }}>Doctor Dashboard</div>
 
         {/* Stat Cards */}
@@ -66,10 +72,10 @@ function DoctorDashboard() {
           {[
             ["Total Appointments", appointments.length, "#00a8ff"],
             ["Confirmed", appointments.filter(a=>a.status==="confirmed").length, "#48bb78"],
-            ["Pending", appointments.filter(a=>a.status==="pending").length, "#ed8936"],
+            ["Pending", appointments.filter(a=>a.status==="pending"||a.status==="Booked").length, "#ed8936"],
             ["Fees", `₹${fees||"—"}`, "#9f7aea"],
           ].map(([label, val, color]) => (
-            <div key={label} style={{ background:"rgba(255,255,255,0.05)", borderRadius:"14px", padding:"20px 24px", border:`1px solid rgba(255,255,255,0.08)`, borderTop:`3px solid ${color}` }}>
+            <div key={label} style={{ background:"rgba(255,255,255,0.05)", borderRadius:"14px", padding:"20px 24px", border:"1px solid rgba(255,255,255,0.08)", borderTop:`3px solid ${color}` }}>
               <div style={{ fontSize:"13px", color:"#718096", fontWeight:"600", marginBottom:"6px" }}>{label}</div>
               <div style={{ fontSize:"24px", fontWeight:"800", color:"#ffffff" }}>{val}</div>
             </div>
@@ -81,7 +87,6 @@ function DoctorDashboard() {
           <div style={{ fontSize:"17px", fontWeight:"700", color:"#ffffff", marginBottom:"20px", paddingBottom:"14px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
             Profile Update Karo
           </div>
-
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"16px", marginBottom:"8px" }}>
             <div>
               <label style={lbl}>FEES (₹)</label>
@@ -97,7 +102,6 @@ function DoctorDashboard() {
             </div>
           </div>
 
-          {/* Toggle */}
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 0", borderTop:"1px solid rgba(255,255,255,0.06)", marginTop:"12px" }}>
             <div>
               <div style={{ fontSize:"15px", fontWeight:"600", color:"#ffffff" }}>Availability</div>
@@ -124,31 +128,49 @@ function DoctorDashboard() {
         </div>
 
         {/* Appointments Table */}
-        <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:"14px", padding:"28px", border:"1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ background:"rgba(255,255,255,0.05)", borderRadius:"14px", padding:"28px", border:"1px solid rgba(255,255,255,0.08)", overflowX:"auto" }}>
           <div style={{ fontSize:"17px", fontWeight:"700", color:"#ffffff", marginBottom:"20px", paddingBottom:"14px", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>
             Mere Appointments
           </div>
           {appointments.length === 0 ? (
             <div style={{ textAlign:"center", color:"#4a5568", padding:"32px 0" }}>Abhi koi appointment nahi hai.</div>
           ) : (
-            <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", minWidth:"600px" }}>
               <thead>
-                <tr>{["Patient","Date","Time","Status"].map(h=>(
-                  <th key={h} style={{ textAlign:"left", padding:"10px 14px", fontSize:"11px", fontWeight:"700", color:"#718096", textTransform:"uppercase", letterSpacing:"0.8px", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.03)" }}>{h}</th>
-                ))}</tr>
+                <tr>
+                  {["Patient","Date","Time","Status","Action"].map(h=>(
+                    <th key={h} style={{ textAlign:"left", padding:"10px 14px", fontSize:"11px", fontWeight:"700", color:"#718096", textTransform:"uppercase", letterSpacing:"0.8px", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.03)" }}>{h}</th>
+                  ))}
+                </tr>
               </thead>
               <tbody>
                 {appointments.map(a => (
                   <tr key={a._id}>
-                    <td style={{ padding:"14px", fontSize:"14px", color:"#e2e8f0", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>{a.patientName || a.patient?.name || "Patient"}</td>
+                    <td style={{ padding:"14px", fontSize:"14px", color:"#e2e8f0", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>{a.patientName || "Patient"}</td>
                     <td style={{ padding:"14px", fontSize:"14px", color:"#e2e8f0", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>{a.date}</td>
                     <td style={{ padding:"14px", fontSize:"14px", color:"#e2e8f0", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>{a.time}</td>
                     <td style={{ padding:"14px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
                       <span style={{ padding:"4px 12px", borderRadius:"20px", fontSize:"12px", fontWeight:"600",
-                        background: a.status==="confirmed"?"rgba(72,187,120,0.15)":a.status==="pending"?"rgba(237,137,54,0.15)":"rgba(252,129,129,0.15)",
-                        color: a.status==="confirmed"?"#68d391":a.status==="pending"?"#f6ad55":"#fc8181" }}>
+                        background: a.status==="confirmed"?"rgba(72,187,120,0.15)":a.status==="cancelled"?"rgba(252,129,129,0.15)":"rgba(237,137,54,0.15)",
+                        color: a.status==="confirmed"?"#68d391":a.status==="cancelled"?"#fc8181":"#f6ad55" }}>
                         {a.status || "pending"}
                       </span>
+                    </td>
+                    <td style={{ padding:"14px", borderBottom:"1px solid rgba(255,255,255,0.05)" }}>
+                      <div style={{ display:"flex", gap:"8px" }}>
+                        {a.status !== "confirmed" && (
+                          <button onClick={() => handleStatus(a._id, "confirmed")}
+                            style={{ padding:"6px 14px", borderRadius:"8px", border:"none", background:"rgba(72,187,120,0.2)", color:"#68d391", fontWeight:"600", fontSize:"12px", cursor:"pointer" }}>
+                            ✓ Confirm
+                          </button>
+                        )}
+                        {a.status !== "cancelled" && (
+                          <button onClick={() => handleStatus(a._id, "cancelled")}
+                            style={{ padding:"6px 14px", borderRadius:"8px", border:"none", background:"rgba(252,129,129,0.2)", color:"#fc8181", fontWeight:"600", fontSize:"12px", cursor:"pointer" }}>
+                            ✕ Cancel
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
